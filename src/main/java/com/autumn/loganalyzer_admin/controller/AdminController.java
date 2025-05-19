@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -28,9 +29,9 @@ public class AdminController {
     private final ModelMapper modelMapper;
 
     @PostMapping("/register")
-    public ResponseEntity<String> registerApplication(@RequestBody RegistrationDTO registrationDTO) {
+    public ResponseEntity<String> registerApplication(@RequestBody RegistrationDTO registrationDTO) throws ExecutionException, InterruptedException {
         String apiKey = UUID.randomUUID().toString();
-        String kafkaTopic = registrationDTO.getOrganizationName()+ "_" + registrationDTO.getApplicationName().toLowerCase()+"_logs";
+        String kafkaTopic = registrationDTO.getOrganizationName().toLowerCase()+ "_" + registrationDTO.getApplicationName().toLowerCase();
 
         // Convert DTO to entity
         ApiKey newApiKey = modelMapper.map(registrationDTO, ApiKey.class);
