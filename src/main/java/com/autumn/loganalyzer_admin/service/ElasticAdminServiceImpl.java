@@ -1,7 +1,9 @@
 package com.autumn.loganalyzer_admin.service;
 
+import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import com.autumn.loganalyzer_admin.model.ElasticAdminDTO;
 import com.autumn.loganalyzer_admin.service.interfaces.ElasticAdminService;
+import org.elasticsearch.client.RequestOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
@@ -22,5 +24,10 @@ public class ElasticAdminServiceImpl implements ElasticAdminService {
         } else {
             System.out.println("Elasticsearch index already exists: " + indexName);
         }
+    }
+
+    @Override
+    public boolean indexExists(String indexName) {
+        return elasticsearchOperations.indexOps(IndexCoordinates.of(indexName)).exists();
     }
 }

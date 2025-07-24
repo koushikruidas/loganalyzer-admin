@@ -30,4 +30,14 @@ public class KafkaAdminServiceImpl implements KafkaAdminService {
             throw e;
         }
     }
+
+    @Override
+    public boolean topicExists(String topicName) throws ExecutionException, InterruptedException {
+        try {
+            return adminClient.listTopics().names().get().contains(topicName);
+        } catch (ExecutionException | InterruptedException e) {
+            System.out.println("Failed to check if topic exists: " + e.getMessage());
+            throw e;
+        }
+    }
 }

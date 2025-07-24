@@ -1,13 +1,12 @@
 package com.autumn.loganalyzer_admin.controller;
 
 import com.autumn.loganalyzer_admin.entity.ApiKey;
-import com.autumn.loganalyzer_admin.model.ApiKeyDTO;
-import com.autumn.loganalyzer_admin.model.ElasticAdminDTO;
-import com.autumn.loganalyzer_admin.model.KafkaAdminDTO;
-import com.autumn.loganalyzer_admin.model.RegistrationDTO;
+import com.autumn.loganalyzer_admin.model.*;
 import com.autumn.loganalyzer_admin.repository.ApiKeyRepository;
+import com.autumn.loganalyzer_admin.service.interfaces.ApiKeyService;
 import com.autumn.loganalyzer_admin.service.interfaces.ElasticAdminService;
 import com.autumn.loganalyzer_admin.service.interfaces.KafkaAdminService;
+import com.autumn.loganalyzer_admin.service.interfaces.RegistrationService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
@@ -23,36 +22,17 @@ import java.util.concurrent.ExecutionException;
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 public class AdminController {
+    private final ApiKeyService apiKeyService;
     private final ApiKeyRepository apiKeyRepository;
-    private final KafkaAdminService kafkaAdminService;
-    private final ElasticAdminService elasticAdminService;
+    private final RegistrationService registrationService;
     private final ModelMapper modelMapper;
 
     @PostMapping("/register")
-    public ResponseEntity<String> registerApplication(@RequestBody RegistrationDTO registrationDTO) throws ExecutionException, InterruptedException {
-        String apiKey = UUID.randomUUID().toString();
-        String kafkaTopic = registrationDTO.getOrganizationName().toLowerCase()+ "_" + registrationDTO.getApplicationName().toLowerCase();
-
-        // Convert DTO to entity
-        ApiKey newApiKey = modelMapper.map(registrationDTO, ApiKey.class);
-        newApiKey.setApiKey(apiKey);
-        newApiKey.setKafkaTopic(kafkaTopic);
-        newApiKey.setElasticIndex(kafkaTopic); // indexName is same as topic name
-        newApiKey.setActive(true);
-        apiKeyRepository.save(newApiKey);
-
-        // Create Kafka Topic
-        KafkaAdminDTO kafkaDTO = new KafkaAdminDTO();
-        kafkaDTO.setTopicName(kafkaTopic);
-        kafkaAdminService.createTopic(kafkaDTO);
-
-        // Create Elasticsearch Index
-        ElasticAdminDTO elasticDTO = new ElasticAdminDTO();
-        elasticDTO.setIndexName(kafkaTopic);
-        elasticAdminService.createIndex(elasticDTO);
-
-        return ResponseEntity.ok("Registered " + registrationDTO.getApplicationName() + " -> API Key: " + apiKey);
+    public ResponseEntity<String> registerApplication(@RequestBody RegistrationDTO registrationDTO)
+            throws ExecutionException, InterruptedException {
+        return registrationService.registerApplication(registrationDTO);
     }
+
 
     /**
      * Get application details by API Key or appName & orgName
@@ -82,6 +62,11 @@ public class AdminController {
         }
     }
 
+    @GetMapping("/resolve-topic/{topicName}")
+    public ResponseEntity<TopicIndexDTO> resolveTopic(@PathVariable String topicName) {
+        Optional<TopicIndexDTO> dto = apiKeyService.getTopicIndexMapping(topicName);
+        return dto.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
 
     /**
      * List all registered applications.
