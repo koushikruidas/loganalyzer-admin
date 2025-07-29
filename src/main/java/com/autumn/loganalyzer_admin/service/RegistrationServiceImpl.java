@@ -8,6 +8,7 @@ import com.autumn.loganalyzer_admin.repository.ApiKeyRepository;
 import com.autumn.loganalyzer_admin.service.interfaces.ElasticAdminService;
 import com.autumn.loganalyzer_admin.service.interfaces.KafkaAdminService;
 import com.autumn.loganalyzer_admin.service.interfaces.RegistrationService;
+import com.autumn.loganalyzer_admin.service.interfaces.RoutingService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
@@ -24,20 +25,14 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final ApiKeyRepository apiKeyRepository;
     private final KafkaAdminService kafkaAdminService;
     private final ElasticAdminService elasticAdminService;
+    private RoutingService routingService;
     private final ModelMapper modelMapper;
     @Override
-    public ResponseEntity<String> registerApplication(RegistrationDTO registrationDTO) throws ExecutionException, InterruptedException {
+    public ResponseEntity<String> registerApplication(RegistrationDTO dto) throws ExecutionException, InterruptedException {
         String apiKey = UUID.randomUUID().toString();
-        String kafkaTopic = registrationDTO.getOrganizationName().toLowerCase() + "_" +
-                registrationDTO.getApplicationName().toLowerCase();
-
-        String elasticIndex;
-        if (registrationDTO.isSharedIndex()) {
-            elasticIndex = registrationDTO.getOrganizationName().toLowerCase() + "_" +
-                    registrationDTO.getEnvironment().toLowerCase();
-        } else {
-            elasticIndex = kafkaTopic;
-        }
+        String kafkaTopic = routingService.resolveTopic(dto);
+        String elasticIndex = routingService.resolveIndex(dto);
+        String kafkaUsername = "loggen_" + dto.getOrganizationName().toLowerCase() + "_" + dto.getApplicationName().toLowerCase();
 
         // Check if already registered
         if (apiKeyRepository.existsByKafkaTopic(kafkaTopic)) {
@@ -49,7 +44,10 @@ public class RegistrationServiceImpl implements RegistrationService {
         // Create Kafka Topic
         try {
             if (!kafkaAdminService.topicExists(kafkaTopic)) {
-                KafkaAdminDTO kafkaDTO = new KafkaAdminDTO();
+                KafkaAdminDTO kafkaDTO = KafkaAdminDTO.builder()
+                        .topicName(kafkaTopic)
+                        .username(kafkaUsername)
+                        .build();
                 kafkaDTO.setTopicName(kafkaTopic);
                 kafkaAdminService.createTopic(kafkaDTO);
             } else {
@@ -75,12 +73,12 @@ public class RegistrationServiceImpl implements RegistrationService {
         }
 
         // Convert DTO to entity
-        ApiKey newApiKey = modelMapper.map(registrationDTO, ApiKey.class);
+        ApiKey newApiKey = modelMapper.map(dto, ApiKey.class);
         newApiKey.setApiKey(apiKey);
         newApiKey.setKafkaTopic(kafkaTopic);
         newApiKey.setElasticIndex(elasticIndex);
         newApiKey.setActive(true);
         apiKeyRepository.save(newApiKey);
-        return ResponseEntity.ok("Registered " + registrationDTO.getApplicationName() + " -> API Key: " + apiKey);
+        return ResponseEntity.ok("Registered " + dto.getApplicationName() + " -> API Key: " + apiKey);
     }
 }
