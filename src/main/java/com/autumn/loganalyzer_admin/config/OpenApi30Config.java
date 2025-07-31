@@ -5,10 +5,13 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
+
+import java.util.List;
 
 @Configuration
 public class OpenApi30Config {
@@ -29,6 +32,9 @@ public class OpenApi30Config {
     final String apiTitle = String.format("%s API", StringUtils.capitalize(moduleName));
     return new OpenAPI()
         .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
+        .servers(List.of(
+            new Server().url("http://logpulse.io:9000/loganalyzer-admin")
+        ))
         .components(
             new Components()
                 .addSecuritySchemes(securitySchemeName,
@@ -41,4 +47,5 @@ public class OpenApi30Config {
         )
         .info(new Info().title(apiTitle).version(apiVersion));
   }
+
 }
