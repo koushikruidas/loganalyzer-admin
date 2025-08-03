@@ -35,3 +35,9 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Certs ###
+*.jks
+*.p12
+*.pem
+*.crt
