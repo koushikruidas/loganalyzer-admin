@@ -30,10 +30,13 @@ public class KafkaAdminServiceImpl implements KafkaAdminService {
     @Override
     public void createTopic(KafkaAdminDTO kafkaAdminDTO) throws ExecutionException, InterruptedException {
         try {
+            // Step 1: Create Kafka topic
             NewTopic newTopic = new NewTopic(kafkaAdminDTO.getTopicName(), kafkaAdminDTO.getPartitions(), kafkaAdminDTO.getReplicationFactor());
             adminClient.createTopics(Collections.singleton(newTopic)).all().get();
             System.out.println("Kafka topic created: " + kafkaAdminDTO.getTopicName());
             System.out.println("Creating ACLs and user for topic: " + kafkaAdminDTO.getTopicName());
+
+            // Step 2: Create ACL for topic WRITE
             KafkaAclRequest kafkaAclRequest = KafkaAclRequest.builder()
                     .topic(kafkaAdminDTO.getTopicName())
                     .username(kafkaAdminDTO.getUsername())
@@ -41,6 +44,16 @@ public class KafkaAdminServiceImpl implements KafkaAdminService {
                     .resourceType(ResourceType.TOPIC)
                     .build();
             createAcls(kafkaAclRequest);
+
+            // Step 3: Create ACL for consumer group READ
+            System.out.println("Creating ACLs for consumer group: " + kafkaAdminDTO.getConsumerGroup());
+            KafkaAclRequest groupAcl = KafkaAclRequest.builder()
+                    .group(kafkaAdminDTO.getConsumerGroup())
+                    .username(kafkaAdminDTO.getUsername())
+                    .permissionType(KafkaAclPermission.READ)
+                    .resourceType(ResourceType.GROUP)
+                    .build();
+            createAcls(groupAcl);
         } catch (ExecutionException | InterruptedException e) {
             System.out.println("Failed to create Kafka topic: " + e.getMessage());
             throw e;

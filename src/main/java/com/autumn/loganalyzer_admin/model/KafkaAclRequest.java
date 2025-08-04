@@ -10,6 +10,7 @@ public class KafkaAclRequest {
     private String topic;
     private String clusterName;
     private String resourceName;
+    private String group; // For consumer group ACLs
     private String username;
     private KafkaAclPermission permissionType;
     private ResourceType resourceType;

@@ -10,4 +10,5 @@ public class KafkaAdminDTO {
     private int partitions = 3; // Default partitions
     private short replicationFactor = 1; // Default replication
     private String username; // Username for ACL operations
+    private String consumerGroup;
 }
