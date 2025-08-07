@@ -1,5 +1,6 @@
 package com.autumn.loganalyzer_admin.exception;
 
+import com.autumn.loganalyzer_admin.model.RegistrationResponseDTO;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,5 +39,29 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleGenericException(Exception e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("Unexpected error occurred: " + e.getMessage());
+    }
+
+    @ExceptionHandler(KafkaTopicCreationException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ResponseEntity<RegistrationResponseDTO> handleKafkaTopicCreationException(KafkaTopicCreationException ex) {
+        RegistrationResponseDTO responseDTO = RegistrationResponseDTO.builder()
+                .error(ex.getMessage())
+                .build();
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(responseDTO);
+    }
+
+    @ExceptionHandler(ElasticIndexCreationException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ResponseEntity<RegistrationResponseDTO> handleElasticIndexCreationException(ElasticIndexCreationException ex) {
+        RegistrationResponseDTO responseDTO = RegistrationResponseDTO.builder()
+                .error(ex.getMessage())
+                .build();
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(responseDTO);
     }
 }

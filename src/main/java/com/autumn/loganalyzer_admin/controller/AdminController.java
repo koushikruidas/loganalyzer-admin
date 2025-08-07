@@ -1,13 +1,9 @@
 package com.autumn.loganalyzer_admin.controller;
 
-import com.autumn.loganalyzer_admin.entity.ApiKey;
-import com.autumn.loganalyzer_admin.model.ApiKeyDTO;
-import com.autumn.loganalyzer_admin.model.ElasticAdminDTO;
-import com.autumn.loganalyzer_admin.model.KafkaAdminDTO;
-import com.autumn.loganalyzer_admin.model.RegistrationDTO;
-import com.autumn.loganalyzer_admin.repository.ApiKeyRepository;
-import com.autumn.loganalyzer_admin.service.interfaces.ElasticAdminService;
-import com.autumn.loganalyzer_admin.service.interfaces.KafkaAdminService;
+import com.autumn.loganalyzer_admin.model.RegistrationRequestDTO;
+import com.autumn.loganalyzer_admin.model.RegistrationResponseDTO;
+import com.autumn.loganalyzer_admin.model.TopicIndexDTO;
+import com.autumn.loganalyzer_admin.service.interfaces.RegistrationService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
@@ -15,44 +11,29 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 public class AdminController {
-    private final ApiKeyRepository apiKeyRepository;
-    private final KafkaAdminService kafkaAdminService;
-    private final ElasticAdminService elasticAdminService;
+    private final RegistrationService registrationService;
     private final ModelMapper modelMapper;
 
     @PostMapping("/register")
-    public ResponseEntity<String> registerApplication(@RequestBody RegistrationDTO registrationDTO) throws ExecutionException, InterruptedException {
-        String apiKey = UUID.randomUUID().toString();
-        String kafkaTopic = registrationDTO.getOrganizationName().toLowerCase()+ "_" + registrationDTO.getApplicationName().toLowerCase();
+    public ResponseEntity<RegistrationResponseDTO> registerApplication(@RequestBody RegistrationRequestDTO registrationRequestDTO)
+            throws ExecutionException, InterruptedException {
+        RegistrationResponseDTO response = registrationService.registerApplication(registrationRequestDTO);
 
-        // Convert DTO to entity
-        ApiKey newApiKey = modelMapper.map(registrationDTO, ApiKey.class);
-        newApiKey.setApiKey(apiKey);
-        newApiKey.setKafkaTopic(kafkaTopic);
-        newApiKey.setElasticIndex(kafkaTopic); // indexName is same as topic name
-        newApiKey.setActive(true);
-        apiKeyRepository.save(newApiKey);
+        if (response.getError() != null && !response.getError().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        }
 
-        // Create Kafka Topic
-        KafkaAdminDTO kafkaDTO = new KafkaAdminDTO();
-        kafkaDTO.setTopicName(kafkaTopic);
-        kafkaAdminService.createTopic(kafkaDTO);
-
-        // Create Elasticsearch Index
-        ElasticAdminDTO elasticDTO = new ElasticAdminDTO();
-        elasticDTO.setIndexName(kafkaTopic);
-        elasticAdminService.createIndex(elasticDTO);
-
-        return ResponseEntity.ok("Registered " + registrationDTO.getApplicationName() + " -> API Key: " + apiKey);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
 
     /**
      * Get application details by API Key or appName & orgName
@@ -64,30 +45,41 @@ public class AdminController {
             @RequestParam(required = false) String appName,
             @RequestParam(required = false) String orgName) {
 
-        Optional<ApiKey> apiKeyDetails;
+        Optional<RegistrationResponseDTO> registration;
 
-        if (apiKey != null) {
-            apiKeyDetails = apiKeyRepository.findByApiKey(apiKey);
-        } else if (appName != null && orgName != null) {
-            apiKeyDetails = apiKeyRepository.findByApplicationNameAndOrganizationName(appName, orgName);
+        if (apiKey != null && !apiKey.isEmpty()) {
+            registration = registrationService.findByApiKey(apiKey);
+        } else if (appName != null && orgName != null && !appName.isEmpty() && !orgName.isEmpty()) {
+            registration = registrationService.findByApplicationNameAndOrganizationName(appName, orgName);
         } else {
             return ResponseEntity.badRequest().body("Provide either apiKey or both appName & orgName");
         }
 
-        if (apiKeyDetails.isPresent()) {
-            return ResponseEntity.ok(modelMapper.map(apiKeyDetails.get(), ApiKeyDTO.class)); // Return ApiKey on success
+        if (registration.isPresent()) {
+            return ResponseEntity.ok(modelMapper.map(registration.get(), RegistrationResponseDTO.class)); // Return ApiKey on success
         } else {
             // Return an error object or a String with an error status
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("API Key not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Registration not avialable");
         }
     }
-
 
     /**
      * List all registered applications.
      */
     @GetMapping("/applications")
-    public ResponseEntity<List<ApiKey>> getAllApplications() {
-        return ResponseEntity.ok(apiKeyRepository.findAll());
+    public ResponseEntity<List<RegistrationResponseDTO>> getAllApplications() {
+        return ResponseEntity.ok(registrationService.findAll());
+    }
+
+    @GetMapping("/topic-index-map")
+    public ResponseEntity<Map<String, String>> getTopicIndexMap() {
+        Map<String, String> map = registrationService.getTopicToIndexMap();
+        return ResponseEntity.ok(map);
+    }
+
+    @GetMapping("/topic-registration-map")
+    public ResponseEntity<Map<String, TopicIndexDTO>> getTopicRegistrationMap() {
+        Map<String, TopicIndexDTO> map = registrationService.registrationMap();
+        return ResponseEntity.ok(map);
     }
 }

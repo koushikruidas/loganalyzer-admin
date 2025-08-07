@@ -1,0 +1,16 @@
+package com.autumn.loganalyzer_admin.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Builder
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class TopicIndexDTO {
+    private String kafkaUsername;
+    private String consumerGroup;
+    private String elasticIndex;
+}
