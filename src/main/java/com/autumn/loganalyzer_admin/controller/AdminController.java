@@ -3,7 +3,6 @@ package com.autumn.loganalyzer_admin.controller;
 import com.autumn.loganalyzer_admin.model.RegistrationRequestDTO;
 import com.autumn.loganalyzer_admin.model.RegistrationResponseDTO;
 import com.autumn.loganalyzer_admin.model.TopicIndexDTO;
-import com.autumn.loganalyzer_admin.service.interfaces.ApiKeyService;
 import com.autumn.loganalyzer_admin.service.interfaces.RegistrationService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -20,7 +19,6 @@ import java.util.concurrent.ExecutionException;
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 public class AdminController {
-    private final ApiKeyService apiKeyService;
     private final RegistrationService registrationService;
     private final ModelMapper modelMapper;
 
@@ -65,12 +63,6 @@ public class AdminController {
         }
     }
 
-    @GetMapping("/resolve-topic/{topicName}")
-    public ResponseEntity<TopicIndexDTO> resolveTopic(@PathVariable String topicName) {
-        Optional<TopicIndexDTO> dto = apiKeyService.getTopicIndexMapping(topicName);
-        return dto.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
     /**
      * List all registered applications.
      */
@@ -82,6 +74,12 @@ public class AdminController {
     @GetMapping("/topic-index-map")
     public ResponseEntity<Map<String, String>> getTopicIndexMap() {
         Map<String, String> map = registrationService.getTopicToIndexMap();
+        return ResponseEntity.ok(map);
+    }
+
+    @GetMapping("/topic-registration-map")
+    public ResponseEntity<Map<String, TopicIndexDTO>> getTopicRegistrationMap() {
+        Map<String, TopicIndexDTO> map = registrationService.registrationMap();
         return ResponseEntity.ok(map);
     }
 }

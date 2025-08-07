@@ -2,6 +2,7 @@ package com.autumn.loganalyzer_admin.service.interfaces;
 
 import com.autumn.loganalyzer_admin.model.RegistrationRequestDTO;
 import com.autumn.loganalyzer_admin.model.RegistrationResponseDTO;
+import com.autumn.loganalyzer_admin.model.TopicIndexDTO;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -15,4 +16,5 @@ public interface RegistrationService {
     Optional<RegistrationResponseDTO> findByApiKey(String apiKey);
     Optional<RegistrationResponseDTO> findByApplicationNameAndOrganizationName(String appName, String orgName);
     List<RegistrationResponseDTO> findAll();
+    Map<String, TopicIndexDTO> registrationMap();
 }

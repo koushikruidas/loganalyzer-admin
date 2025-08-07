@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TopicIndexDTO {
-    private String kafkaTopic;
+    private String kafkaUsername;
+    private String consumerGroup;
     private String elasticIndex;
 }

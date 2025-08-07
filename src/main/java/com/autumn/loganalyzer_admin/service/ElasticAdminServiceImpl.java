@@ -24,13 +24,13 @@ public class ElasticAdminServiceImpl implements ElasticAdminService {
 
     private RestTemplate restTemplate;
 
-    @Value("${elastic.base-url}")
+    @Value("${elasticsearch.host}")
     private String elasticBaseUrl;
 
-    @Value("${elastic.auth.username}")
+    @Value("${elasticsearch.username}")
     private String username;
 
-    @Value("${elastic.auth.password}")
+    @Value("${elasticsearch.password}")
     private String password;
 
     @Value("${elastic.ilm.policy.name}")

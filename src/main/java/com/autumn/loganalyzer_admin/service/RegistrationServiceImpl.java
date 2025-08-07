@@ -3,10 +3,7 @@ package com.autumn.loganalyzer_admin.service;
 import com.autumn.loganalyzer_admin.entity.Registration;
 import com.autumn.loganalyzer_admin.exception.ElasticIndexCreationException;
 import com.autumn.loganalyzer_admin.exception.KafkaTopicCreationException;
-import com.autumn.loganalyzer_admin.model.ElasticAdminDTO;
-import com.autumn.loganalyzer_admin.model.KafkaAdminDTO;
-import com.autumn.loganalyzer_admin.model.RegistrationRequestDTO;
-import com.autumn.loganalyzer_admin.model.RegistrationResponseDTO;
+import com.autumn.loganalyzer_admin.model.*;
 import com.autumn.loganalyzer_admin.repository.RegistrationRepository;
 import com.autumn.loganalyzer_admin.service.interfaces.ElasticAdminService;
 import com.autumn.loganalyzer_admin.service.interfaces.KafkaAdminService;
@@ -14,8 +11,6 @@ import com.autumn.loganalyzer_admin.service.interfaces.RegistrationService;
 import com.autumn.loganalyzer_admin.service.interfaces.RoutingService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,8 +20,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static java.util.Arrays.stream;
-
 @Service
 @RequiredArgsConstructor
 public class RegistrationServiceImpl implements RegistrationService {
@@ -34,7 +27,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final RegistrationRepository registrationRepository;
     private final KafkaAdminService kafkaAdminService;
     private final ElasticAdminService elasticAdminService;
-    private RoutingService routingService;
+    private final RoutingService routingService;
     private final ModelMapper modelMapper;
     @Override
     public RegistrationResponseDTO registerApplication(RegistrationRequestDTO dto) throws ExecutionException, InterruptedException {
@@ -104,13 +97,27 @@ public class RegistrationServiceImpl implements RegistrationService {
                         .apiKey(apiKey)
                         .build();
     }
-
+    @Override
     public Map<String, String> getTopicToIndexMap() {
         return registrationRepository.findAllByIsActiveTrue()
                 .stream()
                 .collect(Collectors.toMap(
                         Registration::getKafkaTopic,
                         Registration::getElasticIndex,
+                        (existing, replacement) -> existing // handle duplicate keys
+                ));
+    }
+    @Override
+    public Map<String, TopicIndexDTO> registrationMap() {
+        return registrationRepository.findAllByIsActiveTrue()
+                .stream()
+                .collect(Collectors.toMap(
+                        Registration::getKafkaTopic,
+                        reg -> TopicIndexDTO.builder()
+                                .kafkaUsername(reg.getKafkaUsername())
+                                .consumerGroup(reg.getConsumerGroup())
+                                .elasticIndex(reg.getElasticIndex())
+                                .build(),
                         (existing, replacement) -> existing // handle duplicate keys
                 ));
     }

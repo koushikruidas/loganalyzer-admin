@@ -7,7 +7,9 @@ import lombok.Data;
 @Builder
 public class KafkaAdminDTO {
     private String topicName;
-    private int partitions = 3; // Default partitions
+    @Builder.Default
+    private int partitions = 1; // Default partitions
+    @Builder.Default
     private short replicationFactor = 1; // Default replication
     private String username; // Username for ACL operations
     private String consumerGroup;
