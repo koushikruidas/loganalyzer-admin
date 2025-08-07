@@ -54,17 +54,13 @@ public class RegistrationServiceImpl implements RegistrationService {
 
 
         // Create Kafka Topic
-        try {
-            if (!kafkaAdminService.topicExists(kafkaTopic)) {
-                KafkaAdminDTO kafkaDTO = KafkaAdminDTO.builder()
-                        .topicName(kafkaTopic)
-                        .username(kafkaUsername)
-                        .consumerGroup(consumerGroup)
-                        .build();
-                kafkaAdminService.createTopic(kafkaDTO);
-            }
-        } catch (Exception e) {
-            throw new KafkaTopicCreationException("Kafka topic creation failed: " + e.getMessage(), e);
+        if (!kafkaAdminService.topicExists(kafkaTopic)) {
+            KafkaAdminDTO kafkaDTO = KafkaAdminDTO.builder()
+                    .topicName(kafkaTopic)
+                    .username(kafkaUsername)
+                    .consumerGroup(consumerGroup)
+                    .build();
+            kafkaAdminService.createTopic(kafkaDTO);
         }
 
         // Step 2: Create Elasticsearch Index

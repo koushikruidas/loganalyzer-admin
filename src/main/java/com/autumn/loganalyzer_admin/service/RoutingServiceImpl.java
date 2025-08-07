@@ -10,10 +10,10 @@ public class RoutingServiceImpl implements RoutingService {
     @Override
     public String resolveTopic(RegistrationRequestDTO dto) {
         switch (dto.getRoutingPolicy()) {
-            case ORG_WISE_TOPIC_AND_INDEX:
-                return dto.getOrganizationName().toLowerCase();
             case APP_WISE_TOPIC_AND_INDEX:
                 return dto.getOrganizationName().toLowerCase() + "_" + dto.getApplicationName().toLowerCase();
+            case ORG_WISE_TOPIC_AND_INDEX:
+                return dto.getOrganizationName().toLowerCase();
             case ENV_WISE_TOPIC_SHARED_INDEX:
                 return dto.getOrganizationName().toLowerCase() + "_" + dto.getEnvironment().toLowerCase();
             default:

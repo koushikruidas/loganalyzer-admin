@@ -1,5 +1,6 @@
 package com.autumn.loganalyzer_admin.service;
 
+import com.autumn.loganalyzer_admin.exception.KafkaTopicCreationException;
 import com.autumn.loganalyzer_admin.model.KafkaAclRequest;
 import com.autumn.loganalyzer_admin.model.KafkaAdminDTO;
 import com.autumn.loganalyzer_admin.service.interfaces.KafkaAclService;
@@ -34,11 +35,17 @@ public class KafkaAdminServiceImpl implements KafkaAdminService {
             NewTopic newTopic = new NewTopic(kafkaAdminDTO.getTopicName(), kafkaAdminDTO.getPartitions(), kafkaAdminDTO.getReplicationFactor());
             adminClient.createTopics(Collections.singleton(newTopic)).all().get();
             System.out.println("Kafka topic created: " + kafkaAdminDTO.getTopicName());
-            System.out.println("Creating ACLs and user for topic: " + kafkaAdminDTO.getTopicName());
-
+        } catch (ExecutionException | InterruptedException e) {
+            System.out.println("Failed to create Kafka topic: " + e.getMessage());
+            throw new KafkaTopicCreationException(
+                    "Failed to create Kafka topic: " + kafkaAdminDTO.getTopicName(), e);
+        }
+        System.out.println("Creating ACLs and user for topic: " + kafkaAdminDTO.getTopicName());
+        try {
             // Step 2: Create ACL for topic WRITE
             KafkaAclRequest kafkaAclRequest = KafkaAclRequest.builder()
                     .topic(kafkaAdminDTO.getTopicName())
+                    .resourceName(kafkaAdminDTO.getTopicName())
                     .username(kafkaAdminDTO.getUsername())
                     .permissionType(KafkaAclPermission.WRITE)
                     .resourceType(ResourceType.TOPIC)
@@ -49,15 +56,17 @@ public class KafkaAdminServiceImpl implements KafkaAdminService {
             System.out.println("Creating ACLs for consumer group: " + kafkaAdminDTO.getConsumerGroup());
             KafkaAclRequest groupAcl = KafkaAclRequest.builder()
                     .group(kafkaAdminDTO.getConsumerGroup())
+                    .resourceName(kafkaAdminDTO.getConsumerGroup())
                     .username(kafkaAdminDTO.getUsername())
                     .permissionType(KafkaAclPermission.READ)
                     .resourceType(ResourceType.GROUP)
                     .build();
             createAcls(groupAcl);
-        } catch (ExecutionException | InterruptedException e) {
-            System.out.println("Failed to create Kafka topic: " + e.getMessage());
-            throw e;
+        } catch (Exception e) {
+            System.out.println("Failed to create ACLs: " + e.getMessage());
+            throw new RuntimeException("Failed to create ACLs for topic: " + kafkaAdminDTO.getTopicName(), e);
         }
+        System.out.println("ACLs created successfully for topic: " + kafkaAdminDTO.getTopicName());
     }
 
     @Override
