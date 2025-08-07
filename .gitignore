@@ -37,4 +37,7 @@ out/
 .vscode/
 
 ### Certs ###
-infrastructure/logpulse_server_ca.crt
+*.jks
+*.p12
+*.pem
+*.crt
