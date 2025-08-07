@@ -44,7 +44,6 @@ public class KafkaAdminServiceImpl implements KafkaAdminService {
         try {
             // Step 2: Create ACL for topic WRITE
             KafkaAclRequest kafkaAclRequest = KafkaAclRequest.builder()
-                    .topic(kafkaAdminDTO.getTopicName())
                     .resourceName(kafkaAdminDTO.getTopicName())
                     .username(kafkaAdminDTO.getUsername())
                     .permissionType(KafkaAclPermission.WRITE)
@@ -55,7 +54,6 @@ public class KafkaAdminServiceImpl implements KafkaAdminService {
             // Step 3: Create ACL for consumer group READ
             System.out.println("Creating ACLs for consumer group: " + kafkaAdminDTO.getConsumerGroup());
             KafkaAclRequest groupAcl = KafkaAclRequest.builder()
-                    .group(kafkaAdminDTO.getConsumerGroup())
                     .resourceName(kafkaAdminDTO.getConsumerGroup())
                     .username(kafkaAdminDTO.getUsername())
                     .permissionType(KafkaAclPermission.READ)
@@ -76,6 +74,17 @@ public class KafkaAdminServiceImpl implements KafkaAdminService {
         } catch (ExecutionException | InterruptedException e) {
             System.out.println("Failed to check if topic exists: " + e.getMessage());
             throw e;
+        }
+    }
+
+    @Override
+    public void deleteTopic(String topicName) throws ExecutionException, InterruptedException {
+        try {
+            adminClient.deleteTopics(Collections.singleton(topicName)).all().get();
+            System.out.println("Kafka topic deleted: " + topicName);
+        } catch (ExecutionException | InterruptedException e) {
+            System.out.println("Failed to delete Kafka topic: " + e.getMessage());
+            throw new RuntimeException("Failed to delete Kafka topic: " + topicName, e);
         }
     }
 

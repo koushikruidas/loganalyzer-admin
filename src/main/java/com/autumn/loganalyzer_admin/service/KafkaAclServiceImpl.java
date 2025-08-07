@@ -9,6 +9,7 @@ import org.apache.kafka.clients.admin.CreateAclsResult;
 import org.apache.kafka.common.acl.*;
 import org.apache.kafka.common.resource.PatternType;
 import org.apache.kafka.common.resource.ResourcePattern;
+import org.apache.kafka.common.resource.ResourcePatternFilter;
 import org.apache.kafka.common.resource.ResourceType;
 import org.springframework.stereotype.Service;
 
@@ -48,17 +49,13 @@ public class KafkaAclServiceImpl implements KafkaAclService {
 
     @Override
     public void createAcls(KafkaAclRequest request) {
-        ResourceType resourceType = request.getResourceType();
-        AclOperation operation = request.getPermissionType().toAclOperation();
-
-        String resourceName = resolveResourceName(request);
 
         AclBinding aclBinding = new AclBinding(
-                new ResourcePattern(resourceType, resourceName, PatternType.LITERAL),
+                new ResourcePattern(request.getResourceType(), request.getResourceName(), PatternType.LITERAL),
                 new AccessControlEntry(
                         "User:" + request.getUsername(),
                         "*",
-                        operation,
+                        request.getPermissionType().toAclOperation(),
                         AclPermissionType.ALLOW
                 )
         );
@@ -72,12 +69,26 @@ public class KafkaAclServiceImpl implements KafkaAclService {
         }
     }
 
-    private String resolveResourceName(KafkaAclRequest request) {
-        return switch (request.getResourceType()) {
-            case TOPIC -> request.getTopic();
-            case GROUP -> request.getGroup();
-            case CLUSTER -> request.getClusterName();
-            default -> throw new IllegalArgumentException("Unsupported resource type: " + request.getResourceType());
-        };
+    @Override
+    public void deleteAclsByResourceAndUser(KafkaAclRequest request) {
+        AclBindingFilter filter = new AclBindingFilter(
+            new ResourcePatternFilter(
+                request.getResourceType(),
+                request.getResourceName(),
+                PatternType.LITERAL
+            ),
+            new AccessControlEntryFilter(
+                "User:" + request.getUsername(),
+                null, // match any host
+                AclOperation.ANY, // match any operation
+                AclPermissionType.ANY // match any permission type
+            )
+        );
+        try {
+            adminClient.deleteAcls(Collections.singleton(filter)).all().get();
+            System.out.println("All ACLs deleted for resource: " + request.getResourceName() + ", user: " + request.getUsername());
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Error deleting ACLs: " + e.getMessage(), e);
+        }
     }
 }
