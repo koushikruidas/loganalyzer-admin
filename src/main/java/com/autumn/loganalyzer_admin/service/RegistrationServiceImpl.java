@@ -2,7 +2,6 @@ package com.autumn.loganalyzer_admin.service;
 
 import com.autumn.loganalyzer_admin.entity.Registration;
 import com.autumn.loganalyzer_admin.exception.ElasticIndexCreationException;
-import com.autumn.loganalyzer_admin.exception.KafkaTopicCreationException;
 import com.autumn.loganalyzer_admin.model.*;
 import com.autumn.loganalyzer_admin.repository.RegistrationRepository;
 import com.autumn.loganalyzer_admin.service.interfaces.ElasticAdminService;
@@ -43,8 +42,8 @@ public class RegistrationServiceImpl implements RegistrationService {
         if (existingKafkaTopic.isPresent()) {
             Registration existingRegistration = existingKafkaTopic.get();
             return RegistrationResponseDTO.builder()
-                    .topicName(existingRegistration.getKafkaTopic())
-                    .indexName(existingRegistration.getElasticIndex())
+                    .kafkaTopic(existingRegistration.getKafkaTopic())
+                    .elasticIndex(existingRegistration.getElasticIndex())
                     .kafkaUsername(existingRegistration.getKafkaUsername())
                     .consumerGroup(existingRegistration.getConsumerGroup())
                     .apiKey(existingRegistration.getApiKey())
@@ -86,8 +85,8 @@ public class RegistrationServiceImpl implements RegistrationService {
 
         registrationRepository.save(newRegistration);
         return RegistrationResponseDTO.builder()
-                        .topicName(kafkaTopic)
-                        .indexName(elasticIndex)
+                        .kafkaTopic(kafkaTopic)
+                        .elasticIndex(elasticIndex)
                         .kafkaUsername(kafkaUsername)
                         .consumerGroup(consumerGroup)
                         .apiKey(apiKey)
