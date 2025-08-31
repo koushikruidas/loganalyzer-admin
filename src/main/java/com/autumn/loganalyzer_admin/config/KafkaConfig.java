@@ -20,6 +20,12 @@ public class KafkaConfig {
     private String saslMechanism;
     @Value("${spring.kafka.properties.sasl.jaas.config}")
     private String saslJaasConfig;
+    @Value("${spring.kafka.ssl.keystore.location}")
+    private String sslKeystoreLocation;
+    @Value("${spring.kafka.ssl.keystore.password}")
+    private String sslKeystorePassword;
+    @Value("${spring.kafka.ssl.key.password}")
+    private String sslKeyPassword;
 
     // Kafka AdminClient bean
     @Bean
@@ -30,9 +36,9 @@ public class KafkaConfig {
         props.put("sasl.mechanism", saslMechanism);
         props.put("sasl.jaas.config", saslJaasConfig);
 
-        props.put("ssl.keystore.location", System.getenv("SPRING_KAFKA_PROPERTIES_SSL_KEYSTORE_LOCATION"));
-        props.put("ssl.keystore.password", System.getenv("SPRING_KAFKA_PROPERTIES_SSL_KEYSTORE_PASSWORD"));
-        props.put("ssl.key.password", System.getenv("SPRING_KAFKA_PROPERTIES_SSL_KEY_PASSWORD"));
+        props.put("ssl.keystore.location", sslKeystoreLocation);
+        props.put("ssl.keystore.password", sslKeystorePassword);
+        props.put("ssl.key.password", sslKeyPassword);
         
         return AdminClient.create(props);
     }
