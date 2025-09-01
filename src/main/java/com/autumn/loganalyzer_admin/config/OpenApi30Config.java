@@ -33,7 +33,7 @@ public class OpenApi30Config {
     return new OpenAPI()
         .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
         .servers(List.of(
-            new Server().url("http://logpulse.dev/api/loganalyzer-admin"),
+            new Server().url("https://logpulse.dev/api/loganalyzer-admin"),
             new Server().url("http://localhost:8080/loganalyzer-admin")
         ))
         .components(
