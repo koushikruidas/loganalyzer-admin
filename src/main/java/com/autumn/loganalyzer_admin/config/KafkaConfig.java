@@ -2,7 +2,6 @@ package com.autumn.loganalyzer_admin.config;
 
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
-import org.apache.kafka.common.config.SslConfigs;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,7 +38,7 @@ public class KafkaConfig {
         props.put("ssl.keystore.location", sslKeystoreLocation);
         props.put("ssl.keystore.password", sslKeystorePassword);
         props.put("ssl.key.password", sslKeyPassword);
-        
+
         return AdminClient.create(props);
     }
 }

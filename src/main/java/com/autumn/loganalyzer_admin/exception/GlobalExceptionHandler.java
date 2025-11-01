@@ -13,6 +13,11 @@ import java.util.concurrent.ExecutionException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<String> handleIllegalStateException(IllegalStateException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(ExecutionException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ResponseEntity<String> handleExecutionException(ExecutionException e) {
@@ -64,4 +69,14 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(responseDTO);
     }
+
+    @ExceptionHandler(RegistrationException.class)
+    public ResponseEntity<RegistrationResponseDTO> handleRegistrationException(RegistrationException ex) {
+        RegistrationResponseDTO responseDTO = RegistrationResponseDTO.builder()
+                .error(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(responseDTO);
+    }
+
 }

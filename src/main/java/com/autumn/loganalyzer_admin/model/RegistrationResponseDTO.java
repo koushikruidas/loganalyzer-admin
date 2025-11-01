@@ -18,5 +18,10 @@ public class RegistrationResponseDTO {
     private String consumerGroup;
     private String apiKey;
     private boolean isActive;
+    private String keycloakUsername;
+    private Long quotaBytes;
+    private String email;
+    private int partitions;
+    private Short replicationFactor;
     private String error;
 }

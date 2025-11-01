@@ -7,6 +7,7 @@ import com.autumn.loganalyzer_admin.service.interfaces.KafkaAclService;
 import com.autumn.loganalyzer_admin.service.interfaces.KafkaAdminService;
 import com.autumn.loganalyzer_admin.utility.KafkaAclPermission;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.resource.ResourceType;
@@ -14,10 +15,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class KafkaAdminServiceImpl implements KafkaAdminService {
 
     private final AdminClient adminClient;
@@ -34,13 +37,13 @@ public class KafkaAdminServiceImpl implements KafkaAdminService {
             // Step 1: Create Kafka topic
             NewTopic newTopic = new NewTopic(kafkaAdminDTO.getTopicName(), kafkaAdminDTO.getPartitions(), kafkaAdminDTO.getReplicationFactor());
             adminClient.createTopics(Collections.singleton(newTopic)).all().get();
-            System.out.println("Kafka topic created: " + kafkaAdminDTO.getTopicName());
+            log.info("Kafka topic created: {}", kafkaAdminDTO.getTopicName());
         } catch (ExecutionException | InterruptedException e) {
-            System.out.println("Failed to create Kafka topic: " + e.getMessage());
+            log.error("Failed to create Kafka topic: {}", e.getMessage());
             throw new KafkaTopicCreationException(
-                    "Failed to create Kafka topic: " + kafkaAdminDTO.getTopicName(), e);
+                    "Failed to create Kafka topic: "+ kafkaAdminDTO.getTopicName(), e);
         }
-        System.out.println("Creating ACLs and user for topic: " + kafkaAdminDTO.getTopicName());
+        log.info("Creating ACLs and user for topic: {}", kafkaAdminDTO.getTopicName());
         try {
             // Step 2: Create ACL for topic WRITE
             KafkaAclRequest kafkaAclRequest = KafkaAclRequest.builder()
@@ -52,7 +55,7 @@ public class KafkaAdminServiceImpl implements KafkaAdminService {
             createAcls(kafkaAclRequest);
 
             // Step 3: Create ACL for consumer group READ
-            System.out.println("Creating ACLs for consumer group: " + kafkaAdminDTO.getConsumerGroup());
+            log.info("Creating ACLs for consumer group: {}", kafkaAdminDTO.getConsumerGroup());
             KafkaAclRequest groupAcl = KafkaAclRequest.builder()
                     .resourceName(kafkaAdminDTO.getConsumerGroup())
                     .username(kafkaAdminDTO.getUsername())
@@ -61,10 +64,10 @@ public class KafkaAdminServiceImpl implements KafkaAdminService {
                     .build();
             createAcls(groupAcl);
         } catch (Exception e) {
-            System.out.println("Failed to create ACLs: " + e.getMessage());
+            log.error("Failed to create ACLs: {}", e.getMessage());
             throw new RuntimeException("Failed to create ACLs for topic: " + kafkaAdminDTO.getTopicName(), e);
         }
-        System.out.println("ACLs created successfully for topic: " + kafkaAdminDTO.getTopicName());
+        log.info("ACLs created successfully for topic: {}", kafkaAdminDTO.getTopicName());
     }
 
     @Override
@@ -72,7 +75,7 @@ public class KafkaAdminServiceImpl implements KafkaAdminService {
         try {
             return adminClient.listTopics().names().get().contains(topicName);
         } catch (ExecutionException | InterruptedException e) {
-            System.out.println("Failed to check if topic exists: " + e.getMessage());
+            log.error("Failed to check if topic exists: {}", e.getMessage());
             throw e;
         }
     }
@@ -81,12 +84,25 @@ public class KafkaAdminServiceImpl implements KafkaAdminService {
     public void deleteTopic(String topicName) throws ExecutionException, InterruptedException {
         try {
             adminClient.deleteTopics(Collections.singleton(topicName)).all().get();
-            System.out.println("Kafka topic deleted: " + topicName);
+            log.info("Kafka topic deleted: {}", topicName);
         } catch (ExecutionException | InterruptedException e) {
-            System.out.println("Failed to delete Kafka topic: " + e.getMessage());
+            log.error("Failed to delete Kafka topic: {}", e.getMessage());
             throw new RuntimeException("Failed to delete Kafka topic: " + topicName, e);
         }
     }
+
+    @Override
+    public CompletableFuture<Void> deleteTopicAsync(String topic) {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                adminClient.deleteTopics(Collections.singletonList(topic)).all().get();
+                log.info("AsyncDelete: Kafka topic deleted: {}", topic);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to delete Kafka topic: " + topic, e);
+            }
+        });
+    }
+
 
     public void createAcls(KafkaAclRequest kafkaAclRequest) {
         kafkaAclService.addAcl(kafkaAclRequest);

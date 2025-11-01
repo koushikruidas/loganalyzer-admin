@@ -2,6 +2,7 @@ package com.autumn.loganalyzer_admin.service;
 
 import com.autumn.loganalyzer_admin.model.ElasticAdminDTO;
 import com.autumn.loganalyzer_admin.service.interfaces.ElasticAdminService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class ElasticAdminServiceImpl implements ElasticAdminService {
 
     @Autowired
@@ -105,6 +107,29 @@ public class ElasticAdminServiceImpl implements ElasticAdminService {
 
         } catch (Exception e) {
             System.err.println("Error creating index with ILM: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public boolean deleteIndex(String indexName) {
+
+        // 1. Check if index exists before attempting deletion
+        if (elasticsearchOperations.indexOps(IndexCoordinates.of(indexName)).exists()) {
+            // 2. Attempt deletion
+            boolean deleted = elasticsearchOperations.indexOps(IndexCoordinates.of(indexName)).delete();
+
+            // 3. Log result based on success
+            if (deleted) {
+                log.info("Elasticsearch index deleted successfully: {}", indexName);
+            } else {
+                // Use System.err for failure messages, matching standard logging practice
+                log.error("Failed to delete Elasticsearch index: {}", indexName);
+            }
+            return deleted;
+        } else {
+            // Log that the index wasn't found
+            log.info("Elasticsearch index does not exist, nothing to delete: {}", indexName);
+            return false;
         }
     }
 }
