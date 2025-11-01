@@ -203,7 +203,7 @@ public class RegistrationServiceImpl implements RegistrationService {
         reg.setActive(true);
         reg.setKeycloakUserId(keycloakUserId);
         reg.setKeycloakUsername(dto.getKeycloakUsername());
-        reg.setQuotaBytes(dto.getQuotaBytes() * 1024 * 1024 * 1024); // quotas in GB
+        reg.setQuotaBytes(dto.getQuotaBytes()); // to convert quotas to GBs multiply with 1024*1024*1024
         reg.setCreatedAt(Instant.now());
 
         return registrationRepository.save(reg);
